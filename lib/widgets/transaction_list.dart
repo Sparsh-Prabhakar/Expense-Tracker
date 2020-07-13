@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../models/transaction.dart';
 
@@ -12,26 +11,27 @@ class TransactionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 400,
       child: transactions.isEmpty
-          ? Column(
-              children: <Widget>[
-                Text('No Transactions added yet!',
-                    // ignore: deprecated_member_use
-                    style: Theme.of(context).textTheme.title,
-                    textAlign: TextAlign.center),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                    width: double.infinity,
-                    height: 200,
-                    child: Image.asset(
-                      'assets/images/waiting.png',
-                      fit: BoxFit.fitHeight,
-                    ))
-              ],
-            )
+          ? LayoutBuilder(builder: (ctx, constraints) {
+              return Column(
+                children: <Widget>[
+                  Text('No Transactions added yet!',
+                      // ignore: deprecated_member_use
+                      style: Theme.of(context).textTheme.title,
+                      textAlign: TextAlign.center),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Container(
+                      width: double.infinity,
+                      height: constraints.maxHeight * 0.6,
+                      child: Image.asset(
+                        'assets/images/waiting.png',
+                        fit: BoxFit.fitHeight,
+                      ))
+                ],
+              );
+            })
           : ListView.builder(
               itemBuilder: (ctx, index) {
                 return ListTile(
@@ -47,11 +47,18 @@ class TransactionList extends StatelessWidget {
                   title: Text(transactions[index].title,
                       style: Theme.of(context).textTheme.title),
                   subtitle: Text(transactions[index].date.toString()),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete_outline),
-                    color: Theme.of(context).errorColor,
-                    onPressed: () => deleteTx(transactions[index].id),
-                  ),
+                  trailing: MediaQuery.of(context).size.width > 400
+                      ? FlatButton.icon(
+                        textColor: Theme.of(context).errorColor,
+                          onPressed: () => deleteTx(transactions[index].id),
+                          icon: Icon(Icons.delete_outline),
+                          label: Text('Delete'),
+                        )
+                      : IconButton(
+                          icon: Icon(Icons.delete_outline),
+                          color: Theme.of(context).errorColor,
+                          onPressed: () => deleteTx(transactions[index].id),
+                        ),
                 );
 
                 // return Card(

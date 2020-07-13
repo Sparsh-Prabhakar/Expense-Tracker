@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import './adaptive_flat_button.dart';
 
 class NewTransaction extends StatefulWidget {
   final Function addTx;
@@ -19,15 +24,14 @@ class _NewTransactionState extends State<NewTransaction> {
     final enteredTitle = _titleController.text;
     final enteredAmount = _amountController.text;
 
-    if (enteredTitle.isEmpty || enteredAmount.isEmpty || _selectedDate == null) {
+    if (enteredTitle.isEmpty ||
+        enteredAmount.isEmpty ||
+        _selectedDate == null) {
       return;
     }
 
-    widget.addTx(
-      _titleController.text,
-      double.parse(_amountController.text),
-      _selectedDate
-    );
+    widget.addTx(_titleController.text, double.parse(_amountController.text),
+        _selectedDate);
 
     Navigator.of(context).pop();
   }
@@ -50,61 +54,57 @@ class _NewTransactionState extends State<NewTransaction> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Container(
-        padding: EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Title',
-              ),
-              controller: _titleController,
-              // onChanged: (value) {
-              //   titleInput = value;
-              // }, //dart will automatically know this will be only a String
-            ),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Amount',
-              ),
-              controller: _amountController,
-              keyboardType: TextInputType
-                  .number, //for ios use TextInputType.numberWithOptons(decimal: true)
-              onSubmitted: (_) => _submitData(),
-              // onChanged: (value) {
-              //   amountInput = value;
-              // },
-            ),
-            Row(
-              children: <Widget>[
-                Expanded(
-                    child: Text(_selectedDate == null
-                        ? 'No Date Chosen'
-                        : 'Picked Date: ${DateFormat.yMd().format(_selectedDate)}')),
-                Container(
-                  height: 70,
-                  child: FlatButton(
-                    textColor: Theme.of(context).primaryColor,
-                    onPressed: _presentDatePicker,
-                    child: Text(
-                      'Choose Date',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
+    return SingleChildScrollView(
+      child: Card(
+        child: Container(
+          padding: EdgeInsets.only(
+              top: 10,
+              left: 10,
+              right: 10,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Title',
                 ),
-              ],
-            ),
-            RaisedButton(
-              onPressed: _submitData,
-              color: Theme.of(context).primaryColor,
-              textColor: Theme.of(context).textTheme.button.color,
-              child: Text(
-                'Add Transaction',
+                controller: _titleController,
+                // onChanged: (value) {
+                //   titleInput = value;
+                // }, //dart will automatically know this will be only a String
               ),
-            )
-          ],
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Amount',
+                ),
+                controller: _amountController,
+                keyboardType: TextInputType
+                    .number, //for ios use TextInputType.numberWithOptons(decimal: true)
+                onSubmitted: (_) => _submitData(),
+                // onChanged: (value) {
+                //   amountInput = value;
+                // },
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                      child: Text(_selectedDate == null
+                          ? 'No Date Chosen'
+                          : 'Picked Date: ${DateFormat.yMd().format(_selectedDate)}')),
+                  AdaptiveFlatButton('Choose Date', _presentDatePicker)
+                ],
+              ),
+              RaisedButton(
+                onPressed: _submitData,
+                color: Theme.of(context).primaryColor,
+                textColor: Theme.of(context).textTheme.button.color,
+                child: Text(
+                  'Add Transaction',
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
