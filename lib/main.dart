@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import './widgets/new_transaction.dart';
 import './widgets/transaction_list.dart';
@@ -29,6 +28,7 @@ class MyApp extends StatelessWidget {
           accentColor: Colors.amber,
           fontFamily: 'QuickSand',
           textTheme: ThemeData.light().textTheme.copyWith(
+                // ignore: deprecated_member_use
                 title: TextStyle(
                   fontFamily: 'OpenSans',
                   fontWeight: FontWeight.bold,
@@ -38,6 +38,7 @@ class MyApp extends StatelessWidget {
               ),
           appBarTheme: AppBarTheme(
             textTheme: ThemeData.light().textTheme.copyWith(
+                // ignore: deprecated_member_use
                 title: TextStyle(
                     fontFamily: 'OpenSans',
                     fontSize: 20,
@@ -53,7 +54,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   final List<Transaction> _userTransactions = [
     Transaction(
       id: 't1',
@@ -95,6 +96,23 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool _showChart = false;
 
+  @override
+  void initState() {
+    WidgetsBinding.instance.addObserver(this);
+    super.initState();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print(state);
+  }
+
+  @override
+  dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   List<Transaction> get _recentTransactions {
     return _userTransactions.where((tx) {
       return tx.date.isAfter(DateTime.now().subtract(Duration(days: 7)));
@@ -130,34 +148,91 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  List<Widget> _buildLandscapeContent(
+      MediaQueryData mediaQuery, AppBar appBar, Widget txListWidget) {
+    return [
+      Row(
+        //dont use braces for if in list
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          // ignore: deprecated_member_use
+          Text(
+            'Show Chart',
+            // ignore: deprecated_member_use
+            style: Theme.of(context).textTheme.title,
+          ),
+          Switch.adaptive(
+              // adaptive checks the platform and renders accordingly
+              value: _showChart,
+              onChanged: (val) {
+                setState(() {
+                  _showChart = val;
+                });
+              })
+        ],
+      ),
+      _showChart
+          ? Container(
+              height: (mediaQuery.size.height -
+                      appBar.preferredSize.height -
+                      mediaQuery.padding.top) *
+                  0.8,
+              width: mediaQuery.size.width * 0.9,
+              child: Chart(_recentTransactions),
+            )
+          : txListWidget
+    ];
+  }
+
+  List<Widget> _buildPortraitContent(
+      MediaQueryData mediaQuery, AppBar appBar, Widget txListWidget) {
+    return [
+      Container(
+        height: (MediaQuery.of(context).size.height -
+                appBar.preferredSize.height -
+                MediaQuery.of(context).padding.top) *
+            0.3,
+        child: Chart(_recentTransactions),
+      ),
+      txListWidget
+    ];
+  }
+
+  Widget _buildCupertinoAppBar() {
+    return (CupertinoNavigationBar(
+      middle: Text(
+        'Expense Tracker',
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          GestureDetector(
+            child: Icon(CupertinoIcons.add),
+            onTap: () => _startAddNewTransaction(context),
+          ),
+        ],
+      ),
+    ));
+  }
+
+  Widget _buildMaterialAppBar() {
+    return (AppBar(
+      title: Text('Expense Tracker'),
+      actions: <Widget>[
+        IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () => _startAddNewTransaction(context))
+      ],
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
-    final PreferredSizeWidget appBar = Platform.isIOS
-        ? CupertinoNavigationBar(
-            middle: Text(
-              'Expense Tracker',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                GestureDetector(
-                  child: Icon(CupertinoIcons.add),
-                  onTap: () => _startAddNewTransaction(context),
-                ),
-              ],
-            ),
-          )
-        : AppBar(
-            title: Text('Expense Tracker'),
-            actions: <Widget>[
-              IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: () => _startAddNewTransaction(context))
-            ],
-          );
+    final PreferredSizeWidget appBar =
+        Platform.isIOS ? _buildCupertinoAppBar() : _buildMaterialAppBar();
 
     final txListWidget = Container(
       height: (MediaQuery.of(context).size.height -
@@ -174,46 +249,17 @@ class _MyHomePageState extends State<MyHomePage> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
             if (isLandscape)
-              Row(
-                //dont use braces for if in list
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  // ignore: deprecated_member_use
-                  Text(
-                    'Show Chart',
-                    // ignore: deprecated_member_use
-                    style: Theme.of(context).textTheme.title,
-                  ),
-                  Switch.adaptive(
-                      // adaptive checks the platform and renders accordingly
-                      value: _showChart,
-                      onChanged: (val) {
-                        setState(() {
-                          _showChart = val;
-                        });
-                      })
-                ],
+              ..._buildLandscapeContent(
+                mediaQuery,
+                appBar,
+                txListWidget,
               ),
             if (!isLandscape)
-              Container(
-                height: (MediaQuery.of(context).size.height -
-                        appBar.preferredSize.height -
-                        MediaQuery.of(context).padding.top) *
-                    0.3,
-                child: Chart(_recentTransactions),
+              ..._buildPortraitContent(
+                mediaQuery,
+                appBar,
+                txListWidget,
               ),
-            if (!isLandscape) txListWidget,
-            if (isLandscape)
-              _showChart
-                  ? Container(
-                      height: (MediaQuery.of(context).size.height -
-                              appBar.preferredSize.height -
-                              MediaQuery.of(context).padding.top) *
-                          0.8,
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      child: Chart(_recentTransactions),
-                    )
-                  : txListWidget
           ],
         ),
       ),
